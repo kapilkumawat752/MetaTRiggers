@@ -8,6 +8,7 @@ public with sharing class AccountTriggerHandler {
         insertContactOnNewAccount(newList);
         insertNewOpportunityForActiveAccount(newList);
         insertNewOpportunity(newList);
+        assignTOStandardUserProfiles(newList);
     }
     
     public static void beforeUpdate(List<Account> newList, Map<Id,Account> oldMap) {   //NOPMD
@@ -23,6 +24,8 @@ public with sharing class AccountTriggerHandler {
        updateAccountBillingToContactMailingAddressWithMap(newList, oldMap);
        updateAccountBillingToContactMailingAddressWithSOQL(newList, oldMap);
        closeOpportunityForDeactivatedAccount(newList, oldmap);
+       updateAccountRevenueRelatedToOpportunity(newList, oldMap);
+       //updateOwnerOfContactRelatedToAccounts(newList);  ----  lookup relationship already exist.
     }
     
     public static void beforeDelete(List<Account> oldList) {    //NOPMD
@@ -197,4 +200,55 @@ public with sharing class AccountTriggerHandler {
         }
     }
     
+    //Scenario: 23  ---
+    private static void updateAccountRevenueRelatedToOpportunity(List<Account> accounts, Map<Id,Account> accountMap) { //Q23
+        List<Opportunity> opportunities = [SELECT Id, StageName, Annual_Revenue__c, Account.AnnualRevenue, AccountId, Account.Active__c FROM Opportunity WHERE AccountId IN: accountMap.keySet()];
+        
+        for (Opportunity opportunity : opportunities) {
+            if (opportunity.Account.Active__c != accountMap.get(opportunity.AccountId).Active__c 
+                && opportunity.Account.Active__c == 'no' 
+                && accountMap.get(opportunity.AccountId).Active__c == 'yes' 
+                && opportunity.StageName != 'Closed Won') {
+                opportunity.StageName = 'Close Lost';
+            }
+            if (opportunity.Account.AnnualRevenue != NULL && opportunity.Account.AnnualRevenue !=  accountMap.get(opportunity.AccountId).AnnualRevenue) {
+                opportunity.Annual_Revenue__c = opportunity.Account.AnnualRevenue;
+            }
+        }
+        
+        update opportunities;
+    }
+
+    //Scenario: 27 & 28 ----- Check if Error arises due to Lookup RelationShip.
+    // private Static void updateOwnerOfContactRelatedToAccounts(List<Account> accounts) {
+    //     List<Contact> accountIds = [SELECT AccountId, OwnerId, Account.OwnerId, FROM Contact WHERE AccountId IN : accounts];
+    //     List<Contact> contacts = new List<Contact>();
+    //     for(Contact contact: accountIds) {
+    //         if(contact.Account.OwnerId != contact.OwnerId) {
+    //             contact.OwnerId = contact.Account.OwnerId;
+    //             contacts.add(contact);
+    //         }
+    //         update contacts;
+    //     }
+    // }
+
+    //Scenario:31 -----  Set standard User OWD access level
+    public static void assignTOStandardUserProfiles(List<Account> accounts) { //Q31
+        List<AccountShare> accountShares = new List<AccountShare>();
+        List<User> standardUsers = [SELECT Id FROM User WHERE Profile.Name = 'Standard User'];
+        
+        for (Account account : accounts) {
+            for (User user : standardUsers) {
+                AccountShare accountShare = new AccountShare();
+                accountShare.AccountId = account.Id;
+                accountShare.UserOrGroupId = user.Id;
+                accountShare.AccountAccessLevel = 'Read';
+                accountShare.RowCause = Schema.AccountShare.RowCause.Manual;
+                accountShares.add(accountShare);
+            }
+        }
+        
+        insert accountShares;
+    }
+
 }

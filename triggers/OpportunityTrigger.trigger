@@ -23,7 +23,7 @@ trigger OpportunityTrigger on Opportunity (before insert, before update, before 
         }
         
         when AFTER_DELETE {
-               
+            OpportunityTriggerHandler.afterDelete(Trigger.old);
         }
         
     }

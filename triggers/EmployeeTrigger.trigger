@@ -7,7 +7,7 @@ trigger EmployeeTrigger on Employee__c (before insert, before update, before del
         }
         
         when AFTER_INSERT {
-            
+            EmployeeTriggerHandler.afterInsert(Trigger.new);
         }
         
         when BEFORE_UPDATE {
@@ -23,11 +23,11 @@ trigger EmployeeTrigger on Employee__c (before insert, before update, before del
         }
         
         when AFTER_DELETE {
-            EmployeeTriggerHandler.afterInsert(Trigger.old);
+            EmployeeTriggerHandler.afterDelete(Trigger.old);
         }
 
         when AFTER_UNDELETE {
-            EmployeeTriggerHandler.afterUndelete(Trigger.old);
+            EmployeeTriggerHandler.afterUndelete(Trigger.new);
         }
         
     }

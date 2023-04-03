@@ -1,13 +1,13 @@
-trigger ContactTrigger on Contact (before insert, before update, before delete, after insert, after update, after delete) {   //NOPMD  --  Unused parameter errror
-
+trigger UserTrigger on User (before insert, before update, before delete, after insert, after update, after delete) {  //NOPMD  --  Unused parameter error.
+	
     switch on Trigger.operationType {
         
         when BEFORE_INSERT {
-           ContactTriggerHandler.beforeInsert(Trigger.new);
+        	
         }
         
         when AFTER_INSERT {
-            ContactTriggerHandler.afterInsert(Trigger.new);
+            UserTriggerHAndler.afterInsert(Trigger.new);
         }
         
         when BEFORE_UPDATE {
@@ -15,7 +15,7 @@ trigger ContactTrigger on Contact (before insert, before update, before delete, 
         }
         
         when AFTER_UPDATE {
-            
+           UserTriggerHAndler.afterUpdate(Trigger.new, Trigger.oldMap);
         }
         
         when BEFORE_DELETE {
@@ -23,7 +23,7 @@ trigger ContactTrigger on Contact (before insert, before update, before delete, 
         }
         
         when AFTER_DELETE {
-               
+            
         }
         
     }

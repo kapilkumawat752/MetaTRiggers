@@ -7,7 +7,7 @@ trigger CaseTrigger on Case (before insert, before update, before delete, after 
         }
         
         when AFTER_INSERT {
-            CaseTriggerHandler.afterInsert(Trigger.New);
+            CaseTriggerHandler.afterInsert(Trigger.new);
         }
         
         when BEFORE_UPDATE {
@@ -15,7 +15,7 @@ trigger CaseTrigger on Case (before insert, before update, before delete, after 
         }
         
         when AFTER_UPDATE {
-            CaseTriggerHandler.afterUpdate(Trigger.New);
+            CaseTriggerHandler.afterUpdate(Trigger.new);
         }
         
         when BEFORE_DELETE {

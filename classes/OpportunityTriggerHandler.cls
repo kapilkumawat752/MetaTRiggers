@@ -1,7 +1,8 @@
 public with sharing class OpportunityTriggerHandler {
     public static void beforeInsert(List<Opportunity> newList) {
         changeOpportunityByAmount(newList);
-        updateOpportunityStage(newList); 
+        updateOpportunityStage(newList);
+        updateRelatedAccountsToOpportunity(newList);
     }
     
     public static void afterInsert(List<Opportunity> newList) { //NOPMD
@@ -16,6 +17,8 @@ public with sharing class OpportunityTriggerHandler {
     
     public static void afterUpdate(List<Opportunity> newList, Map<Id, Opportunity> oldMap) {    //NOPMD
        updateCurrentUserNameToTaskForNewOpportunity(newList, oldMap);
+       updateRelatedAccountsToOpportunity(newList, oldMap);
+       updateOpportunityStage(newList, oldmap);
     }
     
     public static void beforeDelete(List<Opportunity> oldList) {    //NOPMD
@@ -23,7 +26,7 @@ public with sharing class OpportunityTriggerHandler {
     }
     
     public static void afterDelete(List<Opportunity> oldList) {     //NOPMD
-        
+        updateRelatedAccountsToOpportunity(oldList);
     } 
 
     private static void changeOpportunityByAmount(List<Opportunity> opportunities) {
@@ -90,4 +93,55 @@ public with sharing class OpportunityTriggerHandler {
         }
     }
 
+    //Scenario: 23 ---- part 2 (part 1 in AccountTriggerHAndler class)
+    private static void updateRelatedAccountsToOpportunity(List<Opportunity> opportunities) { //Q23
+        Set<Id> accountIds = new Set<Id>();
+        for (Opportunity opportunity : opportunities) {
+            accountIds.add(opportunity.AccountId);
+        }
+        List<Account> accounts = UpdateOpportunityRelatedAccounts(accountIds);
+        if (!accounts.isEmpty()) {
+            update accounts;
+        }
+    }
+
+    //Scenario: 23 ---- part 2 (part 1 in AccountTriggerHAndler class)
+    private static void updateRelatedAccountsToOpportunity(List<Opportunity> opportunities, Map<Id, Opportunity> opportunityMap) {
+        Set<Id> accountIds = new Set<Id>();
+        for (Opportunity opportunity : opportunities) {
+            if (opportunity.Amount != opportunityMap.get(opportunity.Id).Amount) {
+                accountIds.add(opportunity.AccountId);
+            }
+        }
+        List<Account> accounts = UpdateOpportunityRelatedAccounts(accountIds);
+        if (!accounts.isEmpty()) {
+            update accounts;
+        }
+    }
+
+    //Scenario: 23 ---- part 2 (part 1 in AccountTriggerHAndler class)
+    public static List<Account> updateOpportunityRelatedAccounts(Set<Id> AccountIds) {
+        List<Account> accounts = new List<Account>();
+        AggregateResult[] groupedResults = [SELECT AccountId, Sum(Amount)annulRevenue FROM Opportunity  WHERE AccountId IN: AccountIds GROUP BY AccountId];
+
+        for (AggregateResult variable : groupedResults) {
+            String accountId = String.valueOf(variable.get('AccountId'));
+            Integer annualRevenue = Integer.valueOf(variable.get('annulRevenue'));
+            accounts.add(new Account(Id = accountId, AnnualRevenue = annualRevenue));
+        }
+
+        return accounts;
+    }
+
+    // Scenario: 26 --- (Similar to Scenario:2)
+    private static void updateOpportunityStage(List<Opportunity> opportunities, Map<Id,Opportunity> oldmap) {
+        for(Opportunity opportunity: opportunities) {
+            if(opportunity.StageName != oldmap.get(opportunity.Id).StageName) {
+                if(opportunity.StageName == 'Closed Won')
+                    opportunity.Description = 'Opportunity is Closed Won!';
+                if(opportunity.StageName == 'Closed Lost')
+                    opportunity.Description = 'Opportunity is Closed Lost!';
+            }
+        }
+    }
 }
